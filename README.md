@@ -21,14 +21,13 @@ const start = () => {
     const handleClick = () => {
         alert('hi')
     }
-    const btn = <button onclick={handleClick}></button> 
-    const c = (<div>
+    const btn = <button onclick={handleClick}></button>
+    return (<div>
         {title}
         {components}
         <br /> 
         {btn}
-    </div>) 
-    return c
+    </div>)
 }
 document.getElementById('main').appendChild(start())
 ```  
