@@ -1,0 +1,9 @@
+{
+    "presets": ["@babel/preset-env"],
+    "plugins": [
+        ["@babel/plugin-transform-react-jsx", {
+            "pragma": "huh.eh"
+        }],
+        ["@babel/plugin-proposal-class-properties"]
+    ]
+}

@@ -1,0 +1,12 @@
+{
+  "name": "huh",
+  "version": "0.0.1",
+  "description": "huh",
+  "main": "huh.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "Michal Szczepanski <michal@vane.pl>",
+  "license": "BSD-3-Clause"
+}
