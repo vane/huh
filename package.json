@@ -1,12 +1,13 @@
 {
-  "name": "huh",
-  "version": "0.0.1",
+  "name": "@szczepano/huh",
+  "version": "0.0.2",
   "description": "huh",
   "main": "huh.js",
+  "license": "BSD-3-Clause",
+  "repository": "vane/huh",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
-  "author": "Michal Szczepanski <michal@vane.pl>",
-  "license": "BSD-3-Clause"
+  "author": "Michal Szczepanski <michal@vane.pl>"
 }

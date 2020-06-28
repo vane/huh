@@ -2,6 +2,9 @@
 export default class huh {
   static eh(tag, data, ...children) {
     let el = document.createElement(tag);
+    if('h-i18' in data) {
+      I18n.register(data['h-i18'], el);
+    }
     for(let arg in data) {
       if(typeof data[arg] == "function") {
         el[arg] = data[arg];
@@ -219,7 +222,7 @@ export class Random {
   }
 }
 
-class Cmd {
+export class Cmd {
   constructor(event) {
     this.event = event
   }
@@ -227,7 +230,7 @@ class Cmd {
   }
 }
 
-class CmdFacade {
+export class CmdFacade {
   constructor() {
     this.registry = {}
     this.listeners = {}
@@ -249,5 +252,43 @@ class CmdFacade {
     this.pub.unwatch(eventName, this.listeners[eventName])
     delete this.listeners[eventName]
     delete this.registry[eventName]
+  }
+}
+
+const _i18comp = {};
+const _i18langs = {};
+
+export class I18 {
+
+  static registerLanguage(lang, data) {
+    if(key in _i18langs) {
+      throw Error(`Duplicate key ${key}`);
+    }
+    _i18langs[lang] = data;
+  }
+
+  static switchLanguage(lang) {
+    if(!lang in _i18langs) {
+      throw Error(`Language not found ${lang}`);
+    }
+    const data = _i18langs[lang].data
+    for(let key in _i18comp) {
+      I18.t(_i18comp[key], data[key]);
+    }
+  }
+
+  static register(key, el) {
+    if(key in _i18ncomp) {
+      throw Error(`Duplicate key ${key}`);
+    }
+    _i18ncomp[key] = el;
+  }
+
+  static t(el, data) {
+    if(typeof data == "string" || typeof data == "number") {
+      el.innerText = translation;
+    } else {
+      throw Error(`TODO implement dynamic data type ${data}`);
+    }
   }
 }
