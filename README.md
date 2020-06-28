@@ -1,45 +1,21 @@
 huh ?
 ====
 
-#### Minimalistic jsx like syntax framework  
+#### Minimalistic jsx like syntax framework
+go to example/parcel-babel    
 ```
-import huh from 'huh'
+npm run build
+``` 
 
-class Hello {
-    render() {
-        return <h1>Hello</h1>
-    }
-}
-
-const start = () => {
-    const title = new Hello()
-    const arr = ['w','o','r','l','d']
-    const components = [] 
-    arr.forEach((el) => {
-        components.push(<span>{el}</span>)
-    })
-    const handleClick = () => {
-        alert('hi')
-    }
-    const btn = <button onclick={handleClick}></button>
-    return (<div>
-        {title}
-        {components}
-        <br /> 
-        {btn}
-    </div>)
-}
-document.getElementById('main').appendChild(start())
-```  
+#### Features
+* jsx syntax
+* i18n
+* event -> command 
 
 #### TODO 
 merge with this repo  
-* [ ] i18n  
 * [ ] history
-* [ ] command / facade workflow  
+* [ ] model -> controller to view injection 
 
 add example  
-* [ ] http
-* [ ] publish / subscribe 
-* [ ] model 
-* [ ] random 
+* [ ] http 

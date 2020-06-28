@@ -75,84 +75,7 @@ export const HTTP = (o) => {
       }
       req.onreadystatechange = null;
     };
-});
-}
-
-// DISPATCHER
-
-let _pinstance = null
-
-export class Sub {
-  constructor(type, data) {
-    this.type = type
-    this.data = data
-  }
-}
-
-export class Pub {
-  constructor() {
-    if(_pinstance) {
-      throw new Error('Pub is Singleton')
-    } else {
-      this.listeners = {}
-      this.once = {}
-      _pinstance = this
-    }
-  }
-
-  static instance() {
-    if (!_pinstance) _pinstance = new Pub()
-    return _pinstance
-  }
-
-  watch (type, callback, once) {
-    console.log('pub watch', type, once)
-    if (!(type in this.listeners)) {
-      this.listeners[type] = []
-    }
-    this.listeners[type].push(callback)
-    if(once) {
-      this.once[callback] = true;
-    }
-    return true
-  }
-
-  unwatch (type, callback) {
-    console.log('pub unwatch', type)
-    if (!(type in this.listeners)) {
-      return true
-    }
-    const stack = this.listeners[type]
-    for (let i = 0, l = stack.length; i < l; i++) {
-      if (stack[i] === callback){
-        stack.splice(i, 1)
-        return true
-      }
-    }
-    return false
-  }
-
-  send (event) {
-    // console.log('pub event', event)
-    if (!(event.type in this.listeners)) {
-      return true
-    }
-    var stack = this.listeners[event.type]
-    event.target = this
-    const toRemove = []
-    for (let i = 0, l = stack.length; i < l; i++) {
-      stack[i].call(this, event)
-      if(stack[i] in this.once) {
-        toRemove.push(i);
-      }
-    }
-    // remove once listeners
-    for (let i = 0, l = toRemove.length; i < l; i++) {
-      stack.splice(toRemove[i], 1)
-    }
-    return !event.defaultPrevented
-  }
-
+  });
 }
 
 // Model
@@ -222,36 +145,45 @@ export class Random {
   }
 }
 
-export class Cmd {
-  constructor(event) {
-    this.event = event
-  }
-  execute() {
+// Event -> Command pattern
+
+export class HEvent extends Event{
+  constructor(type, data) {
+    super(type);
+    this.data = data;
   }
 }
 
-export class CmdFacade {
-  constructor() {
-    this.registry = {}
-    this.listeners = {}
-    this.pub = Pub.instance()
-  }
+const _hlisteners = {};
 
-  register(eventName, cmd) {
-    if(eventName in this.registry) {
-      throw new Error(`${eventName} already in Facade`)
+class CmdWrapper {
+  constructor(cmd, once, chain) {
+    this.cmd = cmd;
+    this.once = once;
+    this.chain = chain;
+    this.handler = (e) => {
+      this.cmd();
+      if(this.once) {
+        delete _hlisteners[e.type];
+        removeEventListener(e.type, this.handler);
+      }
+      if(this.chain) {
+        this.chain.forEach((cmd) => {
+          cmd(e);
+        });
+      }
     }
-    this.registry[eventName] = cmd
-    const listener = (e) => {
-      new this.registry[eventName](e).execute()
-    }
-    this.pub.watch(eventName, listener)
   }
+}
 
-  unregister(eventName) {
-    this.pub.unwatch(eventName, this.listeners[eventName])
-    delete this.listeners[eventName]
-    delete this.registry[eventName]
+export class HFacade {
+
+  static register(name, cmd, once, chain) {
+    if(name in _hlisteners) {
+      throw new Error(`${name} already in HFacade`)
+    }
+    _hlisteners[name] = new CmdWrapper(cmd, once, chain);
+    addEventListener(name, _hlisteners[name].handler);
   }
 }
 

@@ -1,9 +1,13 @@
-import huh, {Random, I18} from '@szczepano/huh'
+import huh, {Random, I18, HFacade, HEvent} from '@szczepano/huh'
 
 class Hello {
     render() {
         return <h1 h-i18="h1.hello">Hello</h1>
     }
+}
+
+const AlertHiCmd = () => {
+    alert(I18.getKey('alert.hi'));
 }
 
 const start = () => {
@@ -27,13 +31,10 @@ const start = () => {
             'alert.hi': 'Cześć',
         }
     })
-    const handleClick = () => {
-        alert(I18.getKey('alert.hi'))
-    }
     const handleLanguageClick = (e) => {
         I18.switchLanguage(e.target.innerText);
     }
-    const btn = <button h-i18="test.btn" onclick={handleClick}>Click me!</button>
+    const btn = <button h-i18="test.btn" onclick={() => dispatchEvent(new HEvent('alert.hi'))}>Click me!</button>
     const langs = ['en', 'pl']
     langs.forEach((l, i) => {
         langs[i] = <button onclick={handleLanguageClick}>{l}</button>
@@ -49,5 +50,6 @@ const start = () => {
     </div>)
 }
 document.getElementById('main').appendChild(start())
+HFacade.register('alert.hi', AlertHiCmd);
 // hack to assign data to all components
 I18.switchLanguage('en');
