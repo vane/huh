@@ -218,3 +218,36 @@ export class Random {
     return out
   }
 }
+
+class Cmd {
+  constructor(event) {
+    this.event = event
+  }
+  execute() {
+  }
+}
+
+class CmdFacade {
+  constructor() {
+    this.registry = {}
+    this.listeners = {}
+    this.pub = Pub.instance()
+  }
+
+  register(eventName, cmd) {
+    if(eventName in this.registry) {
+      throw new Error(`${eventName} already in Facade`)
+    }
+    this.registry[eventName] = cmd
+    const listener = (e) => {
+      new this.registry[eventName](e).execute()
+    }
+    this.pub.watch(eventName, listener)
+  }
+
+  unregister(eventName) {
+    this.pub.unwatch(eventName, this.listeners[eventName])
+    delete this.listeners[eventName]
+    delete this.registry[eventName]
+  }
+}
