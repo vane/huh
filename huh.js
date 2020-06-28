@@ -2,8 +2,8 @@
 export default class huh {
   static eh(tag, data, ...children) {
     let el = document.createElement(tag);
-    if('h-i18' in data) {
-      I18n.register(data['h-i18'], el);
+    if(data && 'h-i18' in data) {
+      I18.register(data['h-i18'], el);
     }
     for(let arg in data) {
       if(typeof data[arg] == "function") {
@@ -179,7 +179,7 @@ export class Model {
   }
 
   update(key, value) {
-    if(!key in this._data) throw new Error(`Invalid key ${key}`)
+    if(!(key in this._data)) throw new Error(`Invalid key ${key}`)
     this._data[key] = value
     this._pub.send(new Sub(`model.${key}`, {type:'update', value}))
   }
@@ -257,38 +257,60 @@ export class CmdFacade {
 
 const _i18comp = {};
 const _i18langs = {};
+let _currentLanguage = null;
 
 export class I18 {
 
+  static language() {
+    return _currentLanguage;
+  }
+
   static registerLanguage(lang, data) {
-    if(key in _i18langs) {
-      throw Error(`Duplicate key ${key}`);
+    if(lang in _i18langs) {
+      throw Error(`Duplicate key ${lang}`);
     }
     _i18langs[lang] = data;
   }
 
   static switchLanguage(lang) {
-    if(!lang in _i18langs) {
+    if(!(lang in _i18langs)) {
       throw Error(`Language not found ${lang}`);
     }
-    const data = _i18langs[lang].data
+    _currentLanguage = lang;
+    const data = _i18langs[lang].data;
     for(let key in _i18comp) {
-      I18.t(_i18comp[key], data[key]);
+      if(!(key in data)) {
+        console.warn(`Missing translation for language "${lang}" key: "${key}" setting current value`);
+        _i18langs[lang].data[key] = _i18comp[key].innerText;
+      } else {
+        I18.t(_i18comp[key], data[key]);
+      }
     }
   }
 
   static register(key, el) {
-    if(key in _i18ncomp) {
+    if(key in _i18comp) {
       throw Error(`Duplicate key ${key}`);
     }
-    _i18ncomp[key] = el;
+    _i18comp[key] = el;
   }
 
   static t(el, data) {
     if(typeof data == "string" || typeof data == "number") {
-      el.innerText = translation;
+      el.innerText = data;
     } else {
       throw Error(`TODO implement dynamic data type ${data}`);
     }
+  }
+
+  static getKey(key) {
+    return _i18langs[_currentLanguage].data[key];
+  }
+
+  static getLKey(lang, key) {
+    if(!(lang in _i18langs)) {
+      throw Error(`Language not found ${lang}`);
+    }
+    return _i18langs[lang].data[key];
   }
 }
