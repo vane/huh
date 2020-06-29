@@ -5,18 +5,18 @@
   "main": "index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "parcel index.html"
+    "dev": "parcel index.html assets/**/*",
+    "build": "parcel build index.html assets/**/*"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
     "@babel/core": "^7.10.3",
-    "@babel/plugin-proposal-class-properties": "^7.10.1",
     "@babel/plugin-transform-react-jsx": "^7.10.3",
     "@babel/preset-env": "^7.10.3",
     "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
-    "@szczepano/huh": "0.0.4"
+    "@szczepano/huh": "0.0.3"
   }
 }

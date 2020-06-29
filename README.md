@@ -10,12 +10,12 @@ npm run build
 #### Features
 * jsx syntax
 * i18n
-* event -> command 
+* event -> command
+* controller -> view injection 
 
 #### TODO 
 merge with this repo  
 * [ ] history
-* [ ] model -> controller to view injection 
 
 add example  
 * [ ] http 

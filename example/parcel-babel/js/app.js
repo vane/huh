@@ -1,55 +1,87 @@
-import huh, {Random, I18, HFacade, HEvent} from '@szczepano/huh'
+import huh, {Random, I18, HFacade, HEvent, HCtrl, HInjection, HModel} from '@szczepano/huh'
 
-class Hello {
+// I18n
+I18.registerLanguage('en', {
+    path:'assets/i18/en.x'
+});
+I18.registerLanguage('pl', {
+    path:'assets/i18/pl.x'
+});
+
+// View
+
+class HelloView {
     render() {
         return <h1 h-i18="h1.hello">Hello</h1>
     }
 }
 
-const AlertHiCmd = () => {
-    alert(I18.getKey('alert.hi'));
+class AlertButtonView {
+    render() {
+        return <button h-i18="test.btn" h-ctrl="alert.button">Click me!</button>
+    }
+}
+
+class LanguageButton {
+    constructor(language) {
+        this.language = language
+    }
+    render() {
+        return <button h-ctrl="language.button">{this.language}</button>
+    }
 }
 
 const start = () => {
-    const title = new Hello()
     const arr = ['w','o','r','l','d']
-    const components = []
-    console.log(Random.intRange(0, 10))
+    const components = [];
     arr.forEach((el) => {
         components.push(<span>{el}</span>)
     })
-    I18.registerLanguage('en', {
-        data: {
-            'alert.hi': 'hi',
-        }
-    })
-    I18.registerLanguage('pl', {
-        data: {
-            'test.btn':'Kliknij!',
-            'language.label': 'Język:',
-            'h1.hello': 'Witaj',
-            'alert.hi': 'Cześć',
-        }
-    })
-    const handleLanguageClick = (e) => {
-        I18.switchLanguage(e.target.innerText);
-    }
-    const btn = <button h-i18="test.btn" onclick={() => dispatchEvent(new HEvent('alert.hi'))}>Click me!</button>
-    const langs = ['en', 'pl']
-    langs.forEach((l, i) => {
-        langs[i] = <button onclick={handleLanguageClick}>{l}</button>
+    const langs = []
+    new Array('en', 'pl').forEach((l, i) => {
+        langs.push(new LanguageButton(l));
     })
     return (<div>
         <div>
-            <label h-i18="language.label">Language:</label>{langs}
+            <label h-i18="language.label">Language:</label>
+            {langs}
         </div>
-        {title}
+        {new HelloView()}
         {components}
         <br />
-        {btn}
+        {new AlertButtonView()}
+        {new AlertButtonView()}
     </div>)
 }
-document.getElementById('main').appendChild(start())
+
+// model
+class AlertButtonModel extends HModel {
+    constructor () {
+        super({
+            'click.count': 0,
+        })
+    }
+}
+
+// controller
+HCtrl.add('language.button', null, [
+  new HInjection('click', (e) => {
+      I18.switchLanguage(e.target.innerText);
+  }),
+]);
+HCtrl.add('alert.button', new AlertButtonModel(), [
+  new HInjection('click', () => {
+      dispatchEvent(new HEvent('alert.hi'));
+  }),
+]);
+
+// command
+const AlertHiCmd = () => {
+    const model = HCtrl.model('alert.button');
+    const count = model.get('click.count');
+    model.set('click.count', count + 1);
+    alert(I18.getKey('alert.hi', model));
+}
 HFacade.register('alert.hi', AlertHiCmd);
-// hack to assign data to all components
-I18.switchLanguage('en');
+I18.loadLanguage('en');
+document.getElementById('main').appendChild(start())

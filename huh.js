@@ -2,9 +2,11 @@
 export default class huh {
   static eh(tag, data, ...children) {
     let el = document.createElement(tag);
-    if(data && 'h-i18' in data) {
-      I18.register(data['h-i18'], el);
+    if(data) {
+      if('h-i18' in data) I18.register(data['h-i18'], el);
+      if('h-ctrl' in data) HCtrl.register(data['h-ctrl'], el);
     }
+
     for(let arg in data) {
       if(typeof data[arg] == "function") {
         el[arg] = data[arg];
@@ -78,46 +80,6 @@ export const HTTP = (o) => {
   });
 }
 
-// Model
-let _minstance = null
-
-export class Model {
-  constructor() {
-    if(_minstance) {
-      throw new Error('Model is Singleton')
-    } else {
-      this._data = {}
-      this._pub = Pub.instance()
-      _minstance = this
-    }
-  }
-
-  set(key, value) {
-    this._data[key] = value
-    this._pub.send(new Sub(`model.${key}`, {type:'set', value}))
-  }
-
-  get(key) {
-    return this._data[key]
-  }
-
-  update(key, value) {
-    if(!(key in this._data)) throw new Error(`Invalid key ${key}`)
-    this._data[key] = value
-    this._pub.send(new Sub(`model.${key}`, {type:'update', value}))
-  }
-
-  del(key) {
-    delete this._data[key]
-    this._pub.send(new Sub(`model.${key}`, {type:'del', value}))
-  }
-
-  static instance() {
-    if (!_minstance) _minstance = new Model()
-    return _minstance
-  }
-}
-
 export class Random {
   static intRange(min, max) {
     min = Math.ceil(min);
@@ -147,7 +109,7 @@ export class Random {
 
 // Event -> Command pattern
 
-export class HEvent extends Event{
+export class HEvent extends Event {
   constructor(type, data) {
     super(type);
     this.data = data;
@@ -185,11 +147,91 @@ export class HFacade {
     _hlisteners[name] = new CmdWrapper(cmd, once, chain);
     addEventListener(name, _hlisteners[name].handler);
   }
+
+  static initialize(data) {
+    data.forEach((el) => {
+      _hlisteners[el.name] = new CmdWrapper(el.cmd, el.once, el.chain);
+      addEventListener(el.name, _hlisteners[el.name].handler);
+    })
+  }
 }
+
+// View -> Model -> Controller
+
+export class HModel {
+  constructor(predefined) {
+    this._data = Object.assign({}, predefined);
+  }
+
+  set(key, value) {
+    this._data[key] = value
+  }
+
+  get(key) {
+    return this._data[key]
+  }
+
+  update(key, value) {
+    if(!(key in this._data)) throw new Error(`Invalid key ${key}`)
+    this._data[key] = value
+  }
+
+  del(key) {
+    delete this._data[key]
+  }
+}
+
+export class HInjection {
+  constructor(name, fn) {
+    this.name = name;
+    this.fn = fn;
+  }
+}
+
+const _ctrls = {}
+
+class CtrlWrapper {
+  constructor(name, model, inject) {
+    this.name = name;
+    this.model = model;
+    this.inject = inject;
+    this.register = (view) => {
+      this.inject.forEach((el) => {
+        view.addEventListener(el.name, el.fn);
+      });
+    }
+  }
+}
+
+export class HCtrl {
+  static add(name, model, inject) {
+    const w = new CtrlWrapper(name, model, inject);
+    _ctrls[name] = w;
+  }
+
+  static register(name, view) {
+    _ctrls[name].register(view);
+  }
+
+  static view(name) {
+    if(!(name in _ctrls)) {
+      throw Error(`View named : "${name}" not found.`)
+    }
+    return _ctrls[name].view;
+  }
+  static model(name) {
+    if(!(name in _ctrls)) {
+      throw Error(`View named : "${name}" not found.`)
+    }
+    return _ctrls[name].model
+  }
+}
+
+// i18n
 
 const _i18comp = {};
 const _i18langs = {};
-let _currentLanguage = null;
+let _currentLanguage = 'en';
 
 export class I18 {
 
@@ -209,40 +251,97 @@ export class I18 {
       throw Error(`Language not found ${lang}`);
     }
     _currentLanguage = lang;
-    const data = _i18langs[lang].data;
+    const ldata = _i18langs[lang];
+    if(ldata.data) {
+      I18.translate(ldata);
+    } else if (ldata.path) {
+      I18.getData(lang, ldata.path, I18.translate);
+    } else {
+      throw Error(`Invalid language definition for language ${lang}`);
+    }
+  }
+
+  static loadLanguage(lang) {
+    const ldata = _i18langs[lang];
+    return I18.getData(lang, ldata.path);
+  }
+
+  static getData(lang, path, handler) {
+      return HTTP({
+        url: path
+      }).then((resp) => {
+        const data = JSON.parse(resp.data);
+        _i18langs[lang].data = data.data;
+        if(handler) handler(data);
+      });
+  }
+
+  static translate(lang) {
+    const data = lang.data;
     for(let key in _i18comp) {
       if(!(key in data)) {
         console.warn(`Missing translation for language "${lang}" key: "${key}" setting current value`);
-        _i18langs[lang].data[key] = _i18comp[key].innerText;
-      } else {
-        I18.t(_i18comp[key], data[key]);
+
       }
+      I18.t(_i18comp[key], data[key]);
     }
   }
 
   static register(key, el) {
-    if(key in _i18comp) {
-      throw Error(`Duplicate key ${key}`);
+    if(!(key in _i18comp)) {
+      _i18comp[key] = [];
     }
-    _i18comp[key] = el;
+    _i18comp[key].push(el);
   }
 
-  static t(el, data) {
-    if(typeof data == "string" || typeof data == "number") {
-      el.innerText = data;
+  static t(elarr, data) {
+    if(!data) return;
+    elarr.forEach((el) => {
+      if(typeof data == "string" || typeof data == "number") {
+        el.innerText = data;
+      } else {
+        let txt = data.txt;
+        data.var.forEach((el) => {
+          const model = _ctrls[el.model].model
+          txt = txt.replace(`{{${el.key}}}`, model.get(el.key))
+        });
+        el.innerText = txt;
+      }
+    });
+  }
+
+  static getKey(key, model) {
+    const ldata =  _i18langs[_currentLanguage];
+    if (ldata.data) {
+      const t = _i18langs[_currentLanguage].data[key];
+      return I18.tkey(t, model);
     } else {
-      throw Error(`TODO implement dynamic data type ${data}`);
+      throw Error(`Language not loaded ${_currentLanguage}`);
     }
   }
 
-  static getKey(key) {
-    return _i18langs[_currentLanguage].data[key];
-  }
-
-  static getLKey(lang, key) {
+  static getLKey(lang, key, model) {
     if(!(lang in _i18langs)) {
       throw Error(`Language not found ${lang}`);
     }
-    return _i18langs[lang].data[key];
+    const ldata =  _i18langs[lang];
+    if (ldata.data) {
+      const t = _i18langs[lang].data[key];
+      return I18.tkey(t, model);
+    } else {
+      throw Error(`Language not loaded ${lang}`);
+    }
+  }
+
+  static tkey(t, model) {
+    if(typeof t == "string" || typeof t == "number") {
+      return t;
+    } else {
+      let txt = t.txt;
+      t.var.forEach((el) => {
+        txt = txt.replace(`{{${el.key}}}`, model.get(el.key))
+      });
+      return txt;
+    }
   }
 }
