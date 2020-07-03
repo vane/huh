@@ -64,7 +64,10 @@ export const HTTP = (o) => {
   if (o.type) {
     req.setRequestHeader('Content-type', o.type);
   }
-
+  if(o.json) {
+    req.setRequestHeader('Content-type', 'application/json');
+    o.data = JSON.stringify(o.data);
+  }
   console.log(o.url);
   req.send(o.data);
   return new Promise((success, failure) => {
@@ -124,7 +127,7 @@ class CmdWrapper {
     this.once = once;
     this.chain = chain;
     this.handler = (e) => {
-      this.cmd();
+      this.cmd(e);
       if(this.once) {
         delete _hlisteners[e.type];
         removeEventListener(e.type, this.handler);

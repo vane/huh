@@ -17,6 +17,6 @@
     "parcel-bundler": "^1.12.4"
   },
   "dependencies": {
-    "@szczepano/huh": "0.0.6"
+    "@szczepano/huh": "0.0.7"
   }
 }
